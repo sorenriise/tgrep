@@ -40,13 +40,13 @@ namespace IO {
 
     int addFile(const std::string&fname) {
 	std::stringstream name;
-	name << "/var/tgrep/.names";       
+	name << "/var/tgrep/names";       
 	int fd = open(name.str().c_str(),O_CREAT+O_APPEND+O_RDWR, 0666);
 	if (fd < 0) {
 	    perror(name.str().c_str());
 	    exit(-1);
 	}
-	int id = lseek(fd,0, SEEK_CUR);
+	int id = lseek(fd,0, SEEK_END);
 	short len = fname.size();
 	write(fd,&len,sizeof(len));
 	write(fd,fname.c_str(), fname.size()+1);
@@ -56,7 +56,7 @@ namespace IO {
     
     std::string getFile(int id) {
 	std::stringstream name;
-	name << "/var/tgrep/.names";       
+	name << "/var/tgrep/names";       
 	int fd = open(name.str().c_str(),O_CREAT+O_APPEND+O_RDWR, 0666);
 	if (fd < 0) {
 	    perror(name.str().c_str());
@@ -68,6 +68,11 @@ namespace IO {
 	char buf[len+10];
 	read(fd,buf, len+1);
 	close(fd);
+
+	//std::cerr << id << std::endl;
+	//std::cerr << len << std::endl;
+	//std::cerr << buf << std::endl;
+
 	return std::string(buf);
     }
 
@@ -82,8 +87,9 @@ public:
     Map(std::string name) {
 	int fd = open(name.c_str(),O_RDWR);
 	if (fd < 0) {
-	    perror(name.c_str());
-	    exit(-1);
+	    m_addr = 0;
+	    m_size = 0;
+	    return;
 	}
 	m_size = lseek(fd, 0, SEEK_END);
 	lseek(fd, 0, SEEK_SET);
@@ -92,7 +98,8 @@ public:
 	close(fd);
     }
     ~Map() {
-	munmap(m_addr, m_size);
+	if (m_addr)
+	    munmap(m_addr, m_size);
     }
 	
     int  *c_int() { return (int*)m_addr; }
@@ -147,7 +154,19 @@ public:
 	int* pint = sigs.c_int();
 	int len = sigs.sizeInt();
 
+	if (pint == 0) {
+	    m_res.clear();
+	    m_first = false;
+	    return;
+	}
+
 	std::sort(&pint[0], &pint[len]);
+	
+	//std::cerr << "SIG "<<sig << std::endl;
+	//for (int x=0; x<len; x++) 
+	//    std::cerr << '['<<pint[x]<<"] ";
+	//std::cerr << std::endl;
+	
 
 	if (m_first) {
 	    m_first = false;
@@ -202,7 +221,7 @@ public:
 int main(int argc, char**argv)
 {
     if (argc > 1 && strcmp(argv[1],"--index") == 0) {
-	for (int f=1; f < argc; f++) {
+	for (int f=2; f < argc; f++) {
 	    
 	    Filename filename(argv[f]);
 	    Map filetext(argv[f]);
@@ -225,8 +244,9 @@ int main(int argc, char**argv)
 
 	for (auto i : index.getRes())
 	{
+
 	    Filename name(i);
-	    std::cout << name.getName() << std::endl;
+	    std::cout <<  name.getName() << std::endl;
 	}
 	
     }    
