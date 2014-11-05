@@ -205,11 +205,12 @@ class TextQuads
     std::set<int> m_quad;
     void addText(const char*txt, unsigned int len)
 	{
-	    for (unsigned i=0; i <len-3; i++) {
-		// we make the shifts hetrogenous to create variations between shifts while keeping the keyspace low(ish).
-		int val = (txt[i+0] << 17) + (txt[i+1] << 12) + (txt[i+2] << 8) + (txt[i+3]);
-		m_quad.insert(val);
-	    }
+	    if (len>=4)
+		for (unsigned i=0; i <len-3; i++) {
+		    // we make the shifts hetrogenous to create variations between shifts while keeping the keyspace low(ish).
+		    int val = (txt[i+0] << 17) + (txt[i+1] << 12) + (txt[i+2] << 8) + (txt[i+3]);
+		    m_quad.insert(val);
+		}
 	}
 public:
     TextQuads(){}
