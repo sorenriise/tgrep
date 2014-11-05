@@ -92,6 +92,11 @@ public:
 	    return;
 	}
 	m_size = lseek(fd, 0, SEEK_END);
+	if (m_size == 0) {
+	    m_addr = 0;
+	    m_size = 0;
+	    return;
+	}
 	lseek(fd, 0, SEEK_SET);
 	m_addr = mmap(0, m_size, PROT_READ+PROT_WRITE,MAP_PRIVATE,fd,0);
 
