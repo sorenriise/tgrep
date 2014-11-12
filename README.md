@@ -11,3 +11,21 @@ While there is a lot of indexing tools out there, elastic search as one, they ar
 Limitations;
   * The index runs once -- if the files have changing context, then this may not work for you
 
+Install;
+  * make; make install
+
+
+Usage;
+
+  * Create index;  (will streamline this later)
+
+      tgrep --index [list of files with text]
+      sort -n -o /var/tgrep/spool /var/tgrep/spool
+      tgrep --unspool
+
+  * Search
+
+      tgrep 'Mr Jones' '@yahoo'
+      this will result in a list of files likely to contain the strings.
+
+

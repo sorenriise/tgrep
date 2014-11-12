@@ -18,16 +18,36 @@
 
 
 namespace IO {
+    void xaddSig(int sig, int id) {
+	static int l_sig = -1;
+	static int fd = -1;
+
+	if (l_sig != sig) {
+	    l_sig = sig;
+	    if (fd != -1) close(fd);
+	    std::stringstream name;
+	    name << "/var/tgrep/" << sig;       
+	    fd = open(name.str().c_str(),O_CREAT+O_APPEND+O_RDWR, 0666);
+	    if (fd < 0) {
+		perror(name.str().c_str());
+		exit(-1);
+	    }
+	}
+	write(fd,&id, sizeof(id));
+    }
+
     void addSig(int sig, int id) {
 	std::stringstream name;
-	name << "/var/tgrep/" << sig;       
-	int fd = open(name.str().c_str(),O_CREAT+O_APPEND+O_RDWR, 0666);
+	name << "/var/tgrep/spool";       
+	static int fd = open(name.str().c_str(),O_CREAT+O_APPEND+O_RDWR, 0666);
 	if (fd < 0) {
 	    perror(name.str().c_str());
 	    exit(-1);
 	}
-	write(fd,&id, sizeof(id));
-	close(fd);
+	char buf[100];
+	sprintf(buf,"%d %d\n",sig,id);
+	write(fd,buf,strlen(buf));
+	//close(fd);
     }
 
 
@@ -41,7 +61,7 @@ namespace IO {
     int addFile(const std::string&fname) {
 	std::stringstream name;
 	name << "/var/tgrep/names";       
-	int fd = open(name.str().c_str(),O_CREAT+O_APPEND+O_RDWR, 0666);
+	static int fd = open(name.str().c_str(),O_CREAT+O_APPEND+O_RDWR, 0666);
 	if (fd < 0) {
 	    perror(name.str().c_str());
 	    exit(-1);
@@ -50,7 +70,7 @@ namespace IO {
 	short len = fname.size();
 	write(fd,&len,sizeof(len));
 	write(fd,fname.c_str(), fname.size()+1);
-	close(fd);
+	//close(fd);
 	return id;
     }
     
@@ -239,13 +259,23 @@ int main(int argc, char**argv)
 	    }
 	}
     } else 
-    if ( argc == 2) {
-	
-	TextQuads quads(argv[1], strlen(argv[1]));
+    if (argc > 1 && strcmp(argv[1],"--unspool") == 0) {
+	FILE *spool = fopen("/var/tgrep/spool","r");
+	int sig, id;
+	while (fscanf(spool,"%d %d\n",&sig,&id) == 2) {
+	    IO::xaddSig(sig,id);
+	}
+	fclose(spool);
+    } else
+    if ( argc >=2) {
 	Index index;
+
+	for (int p=1; p < argc; p++) {
+	    TextQuads quads(argv[p], strlen(argv[p]));
       	
-	for (auto i : quads.getSignature()) {
-	    index.merge(i);
+	    for (auto i : quads.getSignature()) {
+		index.merge(i);
+	    }
 	}
 
 	for (auto i : index.getRes())
